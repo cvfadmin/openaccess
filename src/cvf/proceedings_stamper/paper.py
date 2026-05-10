@@ -6,6 +6,7 @@ import unidecode
 from pydantic import BaseModel, ConfigDict
 
 from cvf.proceedings_stamper import stamp_firstpage_banner, stamp_pagenumber
+from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file
 
 
 def nearest_ascii(ustring):
@@ -118,12 +119,12 @@ class Paper(BaseModel):
         - Copy it to the output folder
         """
 
-        pdf_in = pdfio.nice_open_pdf_file(self.input_path)
+        pdf_in = nice_open_pdf_file(self.input_path)
         pdf_out = pdf_in
-        # note that we are editing pdf_in in-place. changes not
-        # saved until the file is written. If we created a new
-        # pikepdf object for output, we would have to go through
-        # extra effort to preserve hyperlinks and annotations!
+        # note that we are editing pdf_in in-place, though saving it to a new
+        # file. changes not saved until the file is written. If we created a new
+        # pikepdf object for output, we would have to go through extra effort to
+        # preserve hyperlinks and annotations!
 
         # Apply metadata
         if "/Metadata" in pdf_out.Root:
@@ -156,7 +157,9 @@ class Paper(BaseModel):
                     page_number_locations[-1]
                 ] * len(pdf_in.pages)
             else:
-                page_number_locations = guess_page_number_locations(input_pdf_filename)
+                page_number_locations = stamp_pagenumber.guess_page_number_locations(
+                    self.input_path
+                )
         else:
             page_number_locations = [None] * len(pdf_in.pages)
 
@@ -173,7 +176,7 @@ class Paper(BaseModel):
                     "Problem: Page %d is NOT 8.5x11 size! Check to make sure it looks OK!"
                     % page_num
                 )
-                print("  Filename: %s" % input_pdf_filename)
+                print("  Filename: %s" % self.input_path)
 
             # Sometimes ghostscript accidentally gets confused
             # and rotates our page... this flag doesn't affect any
@@ -192,13 +195,9 @@ class Paper(BaseModel):
 
             # Add the banner to the first page
             if page_num == 0:
-                if "*" in banner_file:
-                    banner_file = banner_file.replace("*", "{height}")
-                banner_pdf = pikepdf.Pdf.open(
-                    banner_file.format(
-                        conference=self.conference,
-                        height="%0.1fin" % (float(page.mediabox[3]) / 72.0),
-                    )
+                banner_pdf = stamp_firstpage_banner.make_banner_for_page(
+                    page,
+                    self.banner_config,
                 )
                 page.add_overlay(banner_pdf.pages[0])
 

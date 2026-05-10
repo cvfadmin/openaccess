@@ -15,7 +15,7 @@ the final published version of the proceedings is available on IEEE Xplore.
 """
 
 [spreadsheet]
-url = "https://docs.google.com/spreadsheets/d/1fcQq290Da6Ok9kkR-J5OK-ZCGheY_RcD4_JvN1EuV6A/edit?gid=530500403#gid=530500403"
+url = "https://docs.google.com/spreadsheets/d/1LslqbillvmRiqHfHRqpAmYz6p08_bv7P5G-dxrBONeo/export?format=csv"
 
 [spreadsheet.columns]
 title = "Title (Corrected)"
