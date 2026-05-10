@@ -1,5 +1,11 @@
+import io
+
+import numpy as np
 import pikepdf
 from reportlab.pdfgen import canvas
+from skimage import morphology
+
+from cvf.proceedings_stamper.pdf_io import pdf_to_rgba
 
 
 def create_pagenumber_stamp(page, out_page_number, page_stamp_location):
@@ -71,6 +77,7 @@ def guess_page_number_locations(pdf_filename, debug=False):
     """
     results = []
     prev_location = None
+    assert pdf_filename is not None
     pdf = pikepdf.Pdf.open(pdf_filename)
     n_pages = len(pdf.pages)
     for page_num, img in enumerate(pdf_to_rgba(pdf_filename)):

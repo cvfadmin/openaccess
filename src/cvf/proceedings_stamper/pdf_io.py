@@ -1,32 +1,38 @@
-import cairosvg
-import pymupdf
-import pikepdf
-import unidecode
+import io
 import re
+from pathlib import Path
+
+import cairosvg
+import numpy as np
+import pikepdf
+import pymupdf
+import unidecode
+from PIL import Image
+
 
 def pdf_to_png_buffers(pdf, dpi=72):
-  if isinstance(pdf, io.BytesIO):
-    doc = pymupdf.open("pdf", pdf)
-  else:
-    doc = pymupdf.open(pdf)
-  for page in doc:
-    yield Image.open(io.BytesIO(page.get_pixmap(dpi=dpi).tobytes()))
+    if isinstance(pdf, io.BytesIO):
+        doc = pymupdf.open("pdf", pdf)
+    else:
+        doc = pymupdf.open(pdf)
+    for page in doc:
+        yield page.get_pixmap(dpi=dpi).tobytes(output="png")
 
-def pdf_to_rgba(filename):
-  for png_buffer in pdf_to_png_buffers(filename):
-  #for page in fitz.open(filename):
-  #  img = page.get_pixmap(dpi=72)
-  #  img = np.array(img)
-    img = imread(io.BytesIO(png_buffer))
-    if img.ndim == 2:
-        img = img[:,:, np.newaxis][:,:,[0,0,0]]
-    yield img
 
-def nice_open_pdf_file(filename):
-    """ Run QPDF and then Ghostscript on the PDF file """
-    assert os.path.exists(filename), "%s does not exist"%filename
+def pdf_to_rgba(filename, dpi=72):
+    if isinstance(filename, io.BytesIO):
+        doc = pymupdf.open("pdf", filename)
+    else:
+        doc = pymupdf.open(filename)
+    for page in doc:
+        pixmap = page.get_pixmap(dpi=dpi, colorspace="rgb", alpha=False)
+        arr = np.array(pixmap.get_pil_image())
+        yield arr
 
-    return pikepdf.Pdf.open(filename) # let's try bypassing ghostscript
+
+def nice_open_pdf_file(filename: Path):
+    assert filename.exists(), f"{filename} does not exist"
+    return pikepdf.Pdf.open(filename)
 
     # PikePDF removes the need for below:
     """
@@ -76,21 +82,3 @@ def nice_open_pdf_file(filename):
 
     return Pdf.open(io.BytesIO(out))
     """
-
-def nearest_ascii(ustring):
-    """ Given an encoded string that may contain UTF-8 or Latin-1 high
-    bytes, try to convert it completely ASCII. This is suitable for
-    filenames and author lists. """
-    if not isinstance(ustring,str):
-        try:
-            ustring = ustring.decode('utf-8')
-        except:
-            try:
-                ustring = ustring.decode("iso-8859-1")
-            except:
-                raise ValueError(ustring)
-    # return unicodedata.normalize('NFKD', ustring).encode('ascii','ignore')
-    return unidecode.unidecode(ustring)
-
-def sanitize_for_filename(string):
-    return re.compile(r"[^-a-zA-Z_.0-9]").subn("",nearest_ascii(string))[0]

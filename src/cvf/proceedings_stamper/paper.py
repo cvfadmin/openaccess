@@ -1,60 +1,90 @@
-from dataclasses import dataclass
+import re
 from pathlib import Path
 from pprint import pformat
+
+import unidecode
+from pydantic import BaseModel, ConfigDict
 
 from cvf.proceedings_stamper import stamp_firstpage_banner, stamp_pagenumber
 
 
-@dataclass
-class Paper:
+def nearest_ascii(ustring):
+    """Given an encoded string that may contain UTF-8 or Latin-1 high
+    bytes, try to convert it completely ASCII. This is suitable for
+    filenames and author lists."""
+    if not isinstance(ustring, str):
+        try:
+            ustring = ustring.decode("utf-8")
+        except:
+            try:
+                ustring = ustring.decode("iso-8859-1")
+            except:
+                raise ValueError(ustring)
+    # return unicodedata.normalize('NFKD', ustring).encode('ascii','ignore')
+    return unidecode.unidecode(ustring)
+
+
+def sanitize_for_filename(string):
+    return re.compile(r"[^-a-zA-Z_.0-9]").subn("", nearest_ascii(string))[0]
+
+
+class Paper(BaseModel):
     """A record of one single paper in the proceedings."""
 
-    # Paper title. May contain LaTeX characters.
+    model_config = ConfigDict(use_attribute_docstrings=True)
+
     title: str
+    """Paper title. May contain LaTeX characters."""
 
-    # List of author names. Each author has the format "Firstname Lastname"
     authors: list[str]
+    """List of author names. Each author has the format "Firstname Lastname"."""
 
-    # Long abstract. May contain LaTeX characters.
     abstract: str
+    """Long abstract. May contain LaTeX characters."""
 
-    # Short conference acronym, like "WACV"
     conference_acronym: str
+    """Short conference acronym, like "WACV"."""
 
-    # Full year, like "2024"
     year: str
+    """Full year, like "2024"."""
 
-    # Full conference title. "Winter conference on Applications of Computer Vision"
     conference_long: str
+    """Full conference title. "Winter conference on Applications of Computer Vision"."""
 
-    # Basename of the given input file, like "00023.pdf". Prefix to be added later.
     filename: str
+    """Basename of the given input file, like "00023.pdf". Prefix to be added later."""
 
-    # First and last pages.
     start_page: int
+    """First page number."""
+
     last_page: int
+    """Last page number."""
 
-    # Basename of the supplemental material file, if it exists.
     supplemental_filename: str | None
+    """Basename of the supplemental material file, if it exists."""
 
-    # Array of stamp offset values for each page.
-    # Offsets are in units of 1/72 of an inch, counting from the bottom of the
-    # page upwards. The length of this array should be the number of pages of the input.
-    #
-    # Context: Authors frequently forget to turn off page numbering in their
-    # camera-ready files. We often receive papers that have incorrect page
-    # numbers at the bottom of each page. To correct for this, we stamp white
-    # rectangles to cover the incorrect page numbers, and then stamp our own.
-    # This array allows us to override the automatic page number detection
-    # heuristic with offsets of our choosing.
     page_number_locations: list[float] | None
+    """Array of stamp offset values for each page.
 
-    # Path to paper input and output folders.
+    Offsets are in units of 1/72 of an inch, counting from the bottom of the
+    page upwards. The length of this array should be the number of pages of the input.
+
+    Context: Authors frequently forget to turn off page numbering in their
+    camera-ready files. We often receive papers that have incorrect page
+    numbers at the bottom of each page. To correct for this, we stamp white
+    rectangles to cover the incorrect page numbers, and then stamp our own.
+    This array allows us to override the automatic page number detection
+    heuristic with offsets of our choosing.
+    """
+
     input_prefix: Path
-    output_prefix: Path
+    """Path to the paper input folder."""
 
-    # Path to front-page banner.
+    output_prefix: Path
+    """Path to the paper output folder."""
+
     banner_file: Path
+    """Path to front-page banner."""
 
     @property
     def output_path(self):
