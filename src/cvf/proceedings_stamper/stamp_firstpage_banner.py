@@ -12,7 +12,7 @@ def make_banner_for_page(page: Page, config: BannerConfig):
     """Make a pikepdf.Page showing the banner suitable for applying to a different pikepdf.Page."""
     height_inches = float(page.mediabox[3]) / 72.0
     return _generate_banner(
-        config.in_path.format(height=f"{height_inches:0.1f}in"), tuple(config.lines)
+        config.input_path.format(height=f"{height_inches:0.1f}in"), tuple(config.lines)
     )
 
 

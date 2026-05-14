@@ -1,3 +1,4 @@
+import csv
 import re
 from pathlib import Path
 from pprint import pformat
@@ -6,33 +7,17 @@ import unidecode
 from pydantic import BaseModel, ConfigDict
 
 from cvf.proceedings_stamper import stamp_firstpage_banner, stamp_pagenumber
+from cvf.proceedings_stamper.config import ProceedingsConfig
 from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file
-
-
-def nearest_ascii(ustring):
-    """Given an encoded string that may contain UTF-8 or Latin-1 high
-    bytes, try to convert it completely ASCII. This is suitable for
-    filenames and author lists."""
-    if not isinstance(ustring, str):
-        try:
-            ustring = ustring.decode("utf-8")
-        except:
-            try:
-                ustring = ustring.decode("iso-8859-1")
-            except:
-                raise ValueError(ustring)
-    # return unicodedata.normalize('NFKD', ustring).encode('ascii','ignore')
-    return unidecode.unidecode(ustring)
-
-
-def sanitize_for_filename(string):
-    return re.compile(r"[^-a-zA-Z_.0-9]").subn("", nearest_ascii(string))[0]
 
 
 class Paper(BaseModel):
     """A record of one single paper in the proceedings."""
 
-    model_config = ConfigDict(use_attribute_docstrings=True)
+    model_config = ConfigDict(use_attribute_docstrings=True, extra="forbid")
+
+    input_path: Path
+    """Absolute path to the input PDF file."""
 
     title: str
     """Paper title. May contain LaTeX characters."""
@@ -46,19 +31,16 @@ class Paper(BaseModel):
     conference_acronym: str
     """Short conference acronym, like "WACV"."""
 
-    year: str
+    year: int
     """Full year, like "2024"."""
 
     conference_long: str
     """Full conference title. "Winter conference on Applications of Computer Vision"."""
 
-    filename: str
-    """Basename of the given input file, like "00023.pdf". Prefix to be added later."""
-
-    start_page: int
+    start_page: int | None
     """First page number."""
 
-    last_page: int
+    last_page: int | None
     """Last page number."""
 
     supplemental_filename: str | None
@@ -78,22 +60,15 @@ class Paper(BaseModel):
     heuristic with offsets of our choosing.
     """
 
-    input_prefix: Path
-    """Path to the paper input folder."""
-
-    output_prefix: Path
-    """Path to the paper output folder."""
+    output_directory: Path
+    """Absolute path to the paper output folder."""
 
     banner_file: Path
     """Path to front-page banner."""
 
     @property
     def output_path(self):
-        return self.output_prefix / self.sensible_output_filename
-
-    @property
-    def input_path(self):
-        return self.input_prefix / self.filename
+        return self.output_directory / self.sensible_output_filename
 
     def __str__(self):
         return "\n".join(
@@ -262,7 +237,7 @@ class Paper(BaseModel):
         )
 
 
-def _strip_latex_characters(text):
+def strip_latex_characters(text):
     """
     Remove LaTeX characters from a string.
     """
@@ -362,3 +337,70 @@ def _strip_latex_characters(text):
             repr(orig_text),
         )
     return text
+
+
+def nearest_ascii(ustring):
+    """Given an encoded string that may contain UTF-8 or Latin-1 high
+    bytes, try to convert it completely ASCII. This is suitable for
+    filenames and author lists."""
+    if not isinstance(ustring, str):
+        try:
+            ustring = ustring.decode("utf-8")
+        except:
+            try:
+                ustring = ustring.decode("iso-8859-1")
+            except:
+                raise ValueError(ustring)
+    # return unicodedata.normalize('NFKD', ustring).encode('ascii','ignore')
+    return unidecode.unidecode(ustring)
+
+
+def sanitize_for_filename(string):
+    return re.compile(r"[^-a-zA-Z_.0-9]").subn("", nearest_ascii(string))[0]
+
+
+def emit_csv(
+    papers: list[Paper],
+    config: ProceedingsConfig,
+):
+    """Convert all papers to a CSV file that's suitable to import into
+    phpmyadmin"""
+    with open(config.output_path / config.csv_output_path, "w") as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar="\\")
+        for paper in papers:
+            pathname = (
+                f"content_{config.acronym}_{config.year}/papers"
+                + paper.sensible_output_filename
+            )
+            supplemental_pathname = "None"
+            if paper.supplemental_filename:
+                supplemental_pathname = (
+                    f"content_{config.acronym}_{config.year}/supplemental/"
+                    + paper.sensible_supplemental_filename
+                )
+            writer.writerow(
+                [
+                    # Title
+                    nearest_ascii(paper.title),
+                    # Authors
+                    nearest_ascii(", ".join(paper.authors)),
+                    # PDF (filename)
+                    pathname,
+                    # Supplemental material
+                    supplemental_pathname,
+                    # Original filename
+                    (paper.supplemental_filename or "None"),
+                    # Slides
+                    "None",
+                    # Poster
+                    "None",
+                    # Xplore
+                    "None",
+                    # First page
+                    paper.start_page,
+                    # Last page
+                    paper.last_page,
+                    # Abstract
+                    strip_latex_characters(nearest_ascii(paper.abstract)),
+                ]
+            )
