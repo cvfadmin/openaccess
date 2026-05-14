@@ -1,13 +1,9 @@
 import io
-import re
 from pathlib import Path
 
-import cairosvg
 import numpy as np
 import pikepdf
 import pymupdf
-import unidecode
-from PIL import Image
 
 
 def pdf_to_png_buffers(pdf, dpi=72):
@@ -26,7 +22,7 @@ def pdf_to_rgba(filename, dpi=72):
         doc = pymupdf.open(filename)
     for page in doc:
         pixmap = page.get_pixmap(dpi=dpi, colorspace="rgb", alpha=False)
-        arr = np.array(pixmap.get_pil_image())
+        arr = np.array(pixmap.pil_image())
         yield arr
 
 

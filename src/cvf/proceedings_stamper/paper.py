@@ -4,6 +4,7 @@ from pathlib import Path
 from pprint import pformat
 
 import unidecode
+from nameparser import HumanName
 from pydantic import BaseModel, ConfigDict
 
 from cvf.proceedings_stamper import stamp_firstpage_banner, stamp_pagenumber
@@ -63,12 +64,9 @@ class Paper(BaseModel):
     output_directory: Path
     """Absolute path to the paper output folder."""
 
-    banner_file: Path
-    """Path to front-page banner."""
-
     @property
     def output_path(self):
-        return self.output_directory / self.sensible_output_filename
+        return self.output_directory / self.sensible_output_basename
 
     def __str__(self):
         return "\n".join(
@@ -113,16 +111,17 @@ class Paper(BaseModel):
         self.output_path.parent.mkdir(exist_ok=True, parents=True)
 
         # Verify page count
-        n_pages = self.last_page - self.start_page + 1
-        if len(pdf_in.pages) != n_pages:
-            if verify_page_counts:
-                raise ValueError(
-                    f"Problem with {self}:\nPDF file has {len(pdf_in.pages)}, but {n_pages} in the spreadsheet! Refusing to process this paper. Future papers almost certainly have incorrect page counts."
-                )
-            else:
-                print(
-                    f"Problem with {self}:\nPDF file has {len(pdf_in.pages)}, but {n_pages} in the spreadsheet! Continue at your peril. Future papers almost certainly have incorrect page counts."
-                )
+        if self.last_page is not None and self.start_page is not None:
+            n_pages = self.last_page - self.start_page + 1
+            if len(pdf_in.pages) != n_pages:
+                if verify_page_counts:
+                    raise ValueError(
+                        f"Problem with {self}:\nPDF file has {len(pdf_in.pages)}, but {n_pages} in the spreadsheet! Refusing to process this paper. Future papers almost certainly have incorrect page counts."
+                    )
+                else:
+                    print(
+                        f"Problem with {self}:\nPDF file has {len(pdf_in.pages)}, but {n_pages} in the spreadsheet! Continue at your peril. Future papers almost certainly have incorrect page counts."
+                    )
 
         # Guess page number locations.
         if stamp_page_numbers and self.start_page is not None:
@@ -172,7 +171,7 @@ class Paper(BaseModel):
             if page_num == 0:
                 banner_pdf = stamp_firstpage_banner.make_banner_for_page(
                     page,
-                    self.banner_config,
+                    self._config.banner_config,
                 )
                 page.add_overlay(banner_pdf.pages[0])
 
@@ -201,18 +200,18 @@ class Paper(BaseModel):
         os.rename(temp, self.output_path)
 
     @property
-    def sensible_output_filename(self):
+    def sensible_output_basename(self):
         """Generate a sensible final filename given a paper dictionary"""
         first_author = HumanName(self.authors[0])
         first_author.capitalize()
         name = (first_author.last or first_author.first).replace(" ", "_")
         first_few_words_of_title = "_".join(self.title.split(" ")[:10])
-        return self.output_filename_prefix + sanitize_for_filename(
+        return sanitize_for_filename(
             "%s_%s_%s_%d_paper.pdf"
             % (
                 name,
                 first_few_words_of_title,
-                self.conference,
+                self.conference_acronym,
                 self.year,
             )
         )
@@ -370,7 +369,7 @@ def emit_csv(
         for paper in papers:
             pathname = (
                 f"content_{config.acronym}_{config.year}/papers"
-                + paper.sensible_output_filename
+                + paper.sensible_output_basename
             )
             supplemental_pathname = "None"
             if paper.supplemental_filename:

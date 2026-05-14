@@ -1,9 +1,9 @@
 import io
-from dataclasses import dataclass
 from functools import cache
 
-import cairosvg
 from pikepdf import Page, Pdf
+from reportlab.graphics import renderPDF
+from svglib.svglib import svg2rlg
 
 from cvf.proceedings_stamper.config import BannerConfig
 
@@ -12,7 +12,8 @@ def make_banner_for_page(page: Page, config: BannerConfig):
     """Make a pikepdf.Page showing the banner suitable for applying to a different pikepdf.Page."""
     height_inches = float(page.mediabox[3]) / 72.0
     return _generate_banner(
-        config.input_path.format(height=f"{height_inches:0.1f}in"), tuple(config.lines)
+        str(config.input_path).format(height=f"{height_inches:0.1f}in"),
+        tuple(config.text),
     )
 
 
@@ -27,5 +28,6 @@ def _generate_banner(in_fname, lines):
             assert f"LINE{i}" in in_buf
             in_buf = in_buf.replace(f"LINE{i}", line)
         assert f"LINE{i + 1}" not in in_buf
-        out_buf = cairosvg.svg2pdf((in_buf.encode("utf-8")))
+        drawing = svg2rlg(io.BytesIO(in_buf.encode("utf-8")))
+        out_buf = renderPDF.drawToString(drawing)
         return Pdf.open(io.BytesIO(out_buf))

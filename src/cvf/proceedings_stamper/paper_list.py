@@ -22,9 +22,23 @@ class PaperList(BaseModel):
         df = pd.read_csv(str(config.spreadsheet.url))
 
         paper_list = []
+        columns = config.spreadsheet.columns
+        # are all columns present?
+        errors = []
+        for config_key, column_name in columns.model_dump().items():
+            if config_key != "authors_separator":
+                if column_name not in df.columns:
+                    errors.append(
+                        f"Spreadsheet is missing a column mentioned in the config file:\n    {config_key} = {column_name!r}"
+                    )
+        if errors:
+            errors.append(
+                f"The spreadsheet has one of the following unaccounted columns: {set(df.columns) - set(columns.model_dump().values())}"
+            )
+            raise ValueError("\n".join(errors))
         for row_idx, row in df.iterrows():
             row = row.fillna(None).to_dict()
-            columns = config.spreadsheet.columns
+
             if row[columns.title] and row[columns.input_filename]:
                 filename = row[columns.input_filename]
                 if "\\" in filename:
@@ -55,7 +69,6 @@ class PaperList(BaseModel):
                     ),
                     input_path=config.input_path / row[columns.input_filename],
                     output_directory=config.output_path,
-                    banner_file=Path("abcd"),
                 )
                 paper_list.append(paper)
 
@@ -71,14 +84,14 @@ class PaperList(BaseModel):
             )
 
         # Are output filenames unique?
-        if len(set([paper.sensible_output_filename for paper in paper_list])) != len(
+        if len(set([paper.sensible_output_basename for paper in paper_list])) != len(
             paper_list
         ):
-            counter = Counter([paper.sensible_output_filename for paper in paper_list])
+            counter = Counter([paper.sensible_output_basename for paper in paper_list])
             duplicate_papers = [
                 str(paper)
                 for paper in paper_list
-                if counter[paper.sensible_output_filename] > 1
+                if counter[paper.sensible_output_basename] > 1
             ]
             raise ValueError(
                 f"Papers don't have unique output filenames!\nA list of duplicates: {'\n\n'.join(duplicate_papers)}"

@@ -19,7 +19,7 @@ url = "https://docs.google.com/spreadsheets/d/1LslqbillvmRiqHfHRqpAmYz6p08_bv7P5
 
 [spreadsheet.columns]
 title = "Title (Corrected)"
-abstract = "Abstract"
+abstract = "Abstract (Cleaned)"
 authors = "Authors (Corrected)"
 authors_separator = ","
 input_filename = "Camera-Ready File (Corrected)"
