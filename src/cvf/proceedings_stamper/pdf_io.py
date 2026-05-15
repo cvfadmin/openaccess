@@ -18,7 +18,7 @@ def pdf_to_rgb(
     else:
         doc = pymupdf.open(filename)
     for page in doc:
-        pixmap = page.get_pixmap(dpi=dpi, colorspace="rgb", alpha=False)
+        pixmap = page.get_pixmap(dpi=dpi, colorspace="rgb", alpha=False, annots=False)
         if format == "pil":
             yield pixmap.pil_image()
         elif format == "numpy":

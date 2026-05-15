@@ -176,6 +176,16 @@ class Paper(BaseModel):
             page.contents_add(b"Q", prepend=False)
             page.contents_coalesce()
 
+            # Strip author-added review markup (e.g. /Square comment boxes,
+            # /Popup, /FreeText). These live outside the content stream, so the
+            # q/Q wrap above can't suppress them, and they show up as draggable
+            # objects in Preview. Keep /Link so hyperref-generated hyperlinks
+            # and cross-references survive.
+            if "/Annots" in page:
+                page["/Annots"] = [
+                    a for a in page["/Annots"] if str(a.get("/Subtype", "")) == "/Link"
+                ]
+
             # Add the banner to the first page
             if page_num == 0:
                 banner_pdf = stamp_firstpage_banner.make_banner_for_page(
