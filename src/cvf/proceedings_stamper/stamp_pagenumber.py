@@ -80,7 +80,7 @@ def guess_page_number_locations(pdf_filename, debug=False):
     assert pdf_filename is not None
     pdf = pikepdf.Pdf.open(pdf_filename)
     n_pages = len(pdf.pages)
-    for page_num, img in enumerate(pdf_to_rgba(pdf_filename)):
+    for page_num, img in enumerate(pdf_to_rgba(pdf_filename, dpi=72)):
         img = img.mean(2)
 
         # Erode the image, to smooth over text regions.

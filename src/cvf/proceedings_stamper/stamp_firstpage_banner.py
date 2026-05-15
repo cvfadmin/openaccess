@@ -1,5 +1,6 @@
 import io
 from functools import cache
+from pathlib import Path
 
 from pikepdf import Page, Pdf
 from reportlab.graphics import renderPDF
@@ -11,10 +12,17 @@ from cvf.proceedings_stamper.config import BannerConfig
 def make_banner_for_page(page: Page, config: BannerConfig):
     """Make a pikepdf.Page showing the banner suitable for applying to a different pikepdf.Page."""
     height_inches = float(page.mediabox[3]) / 72.0
+    height = f"{height_inches:0.1f}in"
     return _generate_banner(
-        str(config.input_path).format(height=f"{height_inches:0.1f}in"),
+        _banner_template_path(config.input_path, height),
         tuple(config.text),
     )
+
+
+def _banner_template_path(input_path: Path, height: str) -> str:
+    if input_path.is_dir():
+        return str(input_path / f"template-{height}.svg")
+    return str(input_path).format(height=height)
 
 
 @cache

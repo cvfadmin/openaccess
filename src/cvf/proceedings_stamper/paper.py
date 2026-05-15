@@ -1,7 +1,7 @@
 import csv
 import re
+import tempfile
 from pathlib import Path
-from pprint import pformat
 
 import unidecode
 from nameparser import HumanName
@@ -80,6 +80,8 @@ class Paper(BaseModel):
 
     def stamp(
         self,
+        config: ProceedingsConfig,
+        *,
         stamp_page_numbers=True,
         verify_page_counts=True,
     ):
@@ -171,14 +173,14 @@ class Paper(BaseModel):
             if page_num == 0:
                 banner_pdf = stamp_firstpage_banner.make_banner_for_page(
                     page,
-                    self._config.banner_config,
+                    config.banner,
                 )
                 page.add_overlay(banner_pdf.pages[0])
 
             # Add stamped page numbers to the output page
-            if stamp_page_numbers:
+            if stamp_page_numbers and self.start_page is not None:
                 out_page_number = page_num + self.start_page
-                overlay = create_pagenumber_stamp(
+                overlay = stamp_pagenumber.create_pagenumber_stamp(
                     page, out_page_number, page_number_location
                 )
                 page.add_overlay(overlay.pages[0])
@@ -190,14 +192,15 @@ class Paper(BaseModel):
             # annotations and hyperlinks!
 
         # Finalize stamping the PDF
-        temp = (
-            output_pdf_filename
-            + "-tmp-"
-            + "".join([random.choice("0123456789") for _ in range(10)])
-        )
-        with open(temp, "wb") as f:
+        with tempfile.NamedTemporaryFile(
+            "wb",
+            dir=self.output_path.parent,
+            prefix=f"{self.output_path.name}-tmp-",
+            delete=False,
+        ) as f:
+            temp_path = Path(f.name)
             pdf_out.save(f, normalize_content=True)
-        os.rename(temp, self.output_path)
+        temp_path.replace(self.output_path)
 
     @property
     def sensible_output_basename(self):
@@ -345,10 +348,10 @@ def nearest_ascii(ustring):
     if not isinstance(ustring, str):
         try:
             ustring = ustring.decode("utf-8")
-        except:
+        except Exception:
             try:
                 ustring = ustring.decode("iso-8859-1")
-            except:
+            except Exception:
                 raise ValueError(ustring)
     # return unicodedata.normalize('NFKD', ustring).encode('ascii','ignore')
     return unidecode.unidecode(ustring)
