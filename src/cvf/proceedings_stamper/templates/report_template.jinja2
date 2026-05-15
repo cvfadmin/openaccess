@@ -9,12 +9,20 @@ td img {
 </style>
 
 <table>
-{% for paper in papers %}
 <tr>
-<td>{{ paper.sensible_output_basename }}</td>
-<td>{{paper | show(width_inches=1, height_inches=2, anchor="bottom_center", dpi=72, format="WEBP", quality=80)}}</td>
-<td>{{paper | show(dpi=36, format="WEBP", quality=60)}}</td>
+    {% for paper in papers %}
+    <td>{{paper | show(width_inches=1, height_inches=2, anchor="bottom_center", dpi=72, format="WEBP", quality=80)}}</td>
+    {% endfor %}
 </tr>
-{% endfor %}
+<tr>
+    {% for paper in papers %}
+    <td>{{paper | show(dpi=36, format="WEBP", quality=60)}}</td>
+    {% endfor %}
+</tr>
+<tr>
+    {% for paper in papers %}
+    <td>{{ paper.sensible_output_basename }}</td>
+    {% endfor %}
+</tr>
 
 </section>

@@ -107,8 +107,10 @@ def shell(config_path: Path):
 @app.command
 def to_report(
     config_path: Path,
+    *,
     limit: int | None = None,
     jobs: int = 8,
+    group_size: int = 300,
 ):
     """Convert all papers to PNG images and save them to the specified output directory."""
     with open(config_path, "rb") as f:
@@ -118,8 +120,15 @@ def to_report(
 
     papers = papers[:limit]
 
-    with open(config.report_output_path, "w") as f:
-        f.write(generate_report(papers))
+    for group_num, i in enumerate(range(0, len(papers), group_size)):
+        group = papers[i : i + group_size]
+        with open(
+            config.report_output_path.with_stem(
+                f"{config.report_output_path.stem}_{group_num:03d}"
+            ),
+            "w",
+        ) as f:
+            f.write(generate_report(group))
 
-        print(f"Wrote {config.report_output_path}")
-        print(f"{f.tell() / 1024 / 1024} MB")
+            print(f"Wrote {config.report_output_path}")
+            print(f"{f.tell() / 1024 / 1024} MB")
