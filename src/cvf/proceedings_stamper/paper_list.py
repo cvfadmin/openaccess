@@ -1,15 +1,11 @@
-import csv
 from collections import Counter
-from dataclasses import dataclass, field
-from pathlib import Path
-from xml.parsers.expat import model
 
 import pandas as pd
 from pydantic import BaseModel, model_validator
 from typing_extensions import Self
 
 from cvf.proceedings_stamper.config import ProceedingsConfig
-from cvf.proceedings_stamper.paper import Paper, nearest_ascii, strip_latex_characters
+from cvf.proceedings_stamper.paper import Paper
 
 
 class PaperList(BaseModel):
