@@ -1,29 +1,30 @@
 import io
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pikepdf
 import pymupdf
 
 
-def pdf_to_png_buffers(pdf, dpi=72):
-    if isinstance(pdf, io.BytesIO):
-        doc = pymupdf.open("pdf", pdf)
-    else:
-        doc = pymupdf.open(pdf)
-    for page in doc:
-        yield page.get_pixmap(dpi=dpi).tobytes(output="png")
-
-
-def pdf_to_rgba(filename, dpi=72):
+def pdf_to_rgb(
+    filename,
+    dpi=72,
+    format: Literal["numpy", "pil"] = "numpy",
+    pages: Literal["first", "all"] = "all",
+):
     if isinstance(filename, io.BytesIO):
         doc = pymupdf.open("pdf", filename)
     else:
         doc = pymupdf.open(filename)
     for page in doc:
         pixmap = page.get_pixmap(dpi=dpi, colorspace="rgb", alpha=False)
-        arr = np.array(pixmap.pil_image())
-        yield arr
+        if format == "pil":
+            yield pixmap.pil_image()
+        elif format == "numpy":
+            yield np.array(pixmap.pil_image())
+        if pages == "first":
+            break
 
 
 def nice_open_pdf_file(filename: Path):

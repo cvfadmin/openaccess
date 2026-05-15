@@ -36,6 +36,15 @@ class PaperList(BaseModel):
     papers: list[Paper]
     config: ProceedingsConfig
 
+    def __len__(self):
+        return len(self.papers)
+
+    def __getitem__(self, idx) -> Paper:
+        return self.papers[idx]
+
+    def __iter__(self):
+        return iter(self.papers)
+
     @classmethod
     def read_paper_list(cls, config: ProceedingsConfig):
         """Parse the paper list from the spreadsheet specified in the config."""

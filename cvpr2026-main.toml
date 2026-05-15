@@ -5,6 +5,7 @@ year = 2025
 input_path = "/Users/kimmy/Downloads/CVPR 2026/Files for CVF - CVPR, CVPRW, CVPRF/CVPR 2026 - Main Conference/CVPR 2026 - Paper PDF Files/"
 output_path = "output-camera-ready-2025-05-18-a/"
 zip_output_path = "output-camera-ready-2025-05-18-a.zip"
+report_output_path = "report-camera-ready-2025-05-18-a.html"
 
 [banner]
 text = """

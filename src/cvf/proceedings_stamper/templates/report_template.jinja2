@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<style>
+section {
+/*display: flex;*/
+/*flex-wrap: wrap;*/
+}
+</style>
+
+<section>
+    {% for paper in papers %}
+    <div class="paper">
+        <h3>{{ paper.sensible_output_basename }}</h3>
+        <div>
+            {{paper.pagenumber_tile|show}}
+        </div>
+        <div>
+            {{paper.page_tile|show}}
+        </div>
+
+    </div>
+    {% endfor %}
+
+</section>

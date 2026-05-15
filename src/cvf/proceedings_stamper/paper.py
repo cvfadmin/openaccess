@@ -2,6 +2,7 @@ import csv
 import re
 import tempfile
 from pathlib import Path
+from typing import Any, Literal
 
 import unidecode
 from nameparser import HumanName
@@ -9,13 +10,16 @@ from pydantic import BaseModel, ConfigDict
 
 from cvf.proceedings_stamper import stamp_firstpage_banner, stamp_pagenumber
 from cvf.proceedings_stamper.config import ProceedingsConfig
-from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file
+from cvf.proceedings_stamper.img import beside
+from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file, pdf_to_rgb
 
 
 class Paper(BaseModel):
     """A record of one single paper in the proceedings."""
 
-    model_config = ConfigDict(use_attribute_docstrings=True, extra="forbid")
+    model_config = ConfigDict(
+        use_attribute_docstrings=True, extra="forbid", arbitrary_types_allowed=True
+    )
 
     input_path: Path
     """Absolute path to the input PDF file."""
@@ -46,6 +50,9 @@ class Paper(BaseModel):
 
     supplemental_filename: str | None
     """Basename of the supplemental material file, if it exists."""
+
+    pagenumber_tile: Any = None
+    page_tile: Any = None
 
     page_number_locations: list[float] | None
     """Array of stamp offset values for each page.
@@ -175,7 +182,7 @@ class Paper(BaseModel):
                     page,
                     config.banner,
                 )
-                page.add_overlay(banner_pdf.pages[0])
+                page.add_overlay(banner_pdf.pages[0], push_stack=True)
 
             # Add stamped page numbers to the output page
             if stamp_page_numbers and self.start_page is not None:
@@ -183,7 +190,7 @@ class Paper(BaseModel):
                 overlay = stamp_pagenumber.create_pagenumber_stamp(
                     page, out_page_number, page_number_location
                 )
-                page.add_overlay(overlay.pages[0])
+                page.add_overlay(overlay.pages[0], push_stack=True)
             # pdf_out.pages.append(page)
             # we are editing pdf_out (=pdf_in) in-place, so no
             # need to copy pages!
@@ -232,11 +239,24 @@ class Paper(BaseModel):
             % (
                 name,
                 first_three_words_of_title,
-                self.conference,
+                self.conference_acronym,
                 self.year,
                 extension,
             )
         )
+
+    def image(
+        self,
+        dpi=72,
+        which: Literal["output", "input"] = "output",
+        pages: Literal["first", "all"] = "all",
+        format: Literal["numpy", "pil"] = "pil",
+    ):
+        if which == "input":
+            path = self.input_path
+        elif which == "output":
+            path = self.output_path
+        return list(pdf_to_rgb(path, format=format, dpi=dpi, pages=pages))
 
 
 def strip_latex_characters(text):
@@ -334,7 +354,7 @@ def strip_latex_characters(text):
     text = text.replace("}", " ")
     if "\\" in text:
         print(
-            "Warning: Another \-command:",
+            "Warning: Another \\-command:",
             text[text.index("\\") - 30 : text.index("\\") + 30],
             repr(orig_text),
         )

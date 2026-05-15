@@ -82,6 +82,9 @@ class ProceedingsConfig(BaseModel):
     zip_output_path: Path
     """Path to the output zip file."""
 
+    report_output_path: Path
+    """Path to the output HTML report for QA checks."""
+
     spreadsheet: PaperListSpreadsheetConfig
 
     banner: BannerConfig

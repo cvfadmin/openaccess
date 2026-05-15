@@ -5,7 +5,7 @@ import pikepdf
 from reportlab.pdfgen import canvas
 from skimage import morphology
 
-from cvf.proceedings_stamper.pdf_io import pdf_to_rgba
+from cvf.proceedings_stamper.pdf_io import pdf_to_rgb
 
 PAGE_NUMBER_EROSION_FOOTPRINT = morphology.footprint_rectangle(
     (18, 18),
@@ -84,7 +84,7 @@ def guess_page_number_locations(pdf_filename, debug=False):
     assert pdf_filename is not None
     pdf = pikepdf.Pdf.open(pdf_filename)
     n_pages = len(pdf.pages)
-    for page_num, img in enumerate(pdf_to_rgba(pdf_filename, dpi=72)):
+    for page_num, img in enumerate(pdf_to_rgb(pdf_filename, dpi=72)):
         img = img.mean(2)
 
         # Erode the image, to smooth over text regions.
