@@ -7,6 +7,11 @@ from skimage import morphology
 
 from cvf.proceedings_stamper.pdf_io import pdf_to_rgba
 
+PAGE_NUMBER_EROSION_FOOTPRINT = morphology.footprint_rectangle(
+    (18, 18),
+    decomposition="separable",
+)
+
 
 def create_pagenumber_stamp(page, out_page_number, page_stamp_location):
     """Returns a PikePDF "Page" instance that shows the stamp with
@@ -20,7 +25,6 @@ def create_pagenumber_stamp(page, out_page_number, page_stamp_location):
     """
     content = io.BytesIO()
     pagewidth = float(page.mediabox[2])
-    pageheight = float(page.mediabox[3])
     c = canvas.Canvas(content, pagesize=(8.5 * 72, 11 * 72), pdfVersion=(1, 4))
     c.setFillColorRGB(1, 1, 1)
     pagewidth = float(page.mediabox[2])
@@ -84,10 +88,7 @@ def guess_page_number_locations(pdf_filename, debug=False):
         img = img.mean(2)
 
         # Erode the image, to smooth over text regions.
-        img = morphology.erosion(
-            img,
-            np.ones((18, 18)),
-        )
+        img = morphology.erosion(img, PAGE_NUMBER_EROSION_FOOTPRINT)
 
         # Row_avgs is a measure of how likely each row contains a page
         # number. This is calculated as follows: things in the MIDDLE
