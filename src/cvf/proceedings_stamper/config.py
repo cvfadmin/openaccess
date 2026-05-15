@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from pandas.io.formats.console import in_interactive_session
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, field_validator
 from pydantic.types import DirectoryPath
 
@@ -47,20 +46,16 @@ class PaperListSpreadsheetConfig(BaseModel):
 class BannerConfig(BaseModel):
     model_config = ConfigDict(use_attribute_docstrings=True, extra="forbid")
 
-    input_path: Path
-    """Path to the SVG template for the banner. This path should contain the string "{height}" which will be replaced with the height of the page in inches, e.g. "banner_template_{height}.svg". This allows you to have different banner templates for different page heights, if needed. The SVG file itself should contain the strings "LINE1", "LINE2", and "LINE3" which will be replaced with the actual banner text. Note: Be sure that the needed fonts are installed on the system and that the SVG file references them correctly."""
-
-    text: tuple[str, str, str]
-    """Three-line banner contents to be stamped at the top of the first page."""
+    text: tuple[str, ...]
+    """Banner contents to be stamped at the top of the first page."""
 
     @field_validator("text", mode="before")
-    def validate_text(cls, v: str) -> tuple[str, str, str]:
-        txt = v.strip().splitlines()
-        if len(txt) != 3:
-            raise ValueError(
-                f"Banner text must be three lines. Got {len(txt)} lines. Raw: {txt!r}"
-            )
-        return tuple(txt)
+    def validate_text(cls, v: str | list[str] | tuple[str, ...]) -> tuple[str, ...]:
+        raw_lines = v.strip().splitlines() if isinstance(v, str) else v
+        txt = tuple(line.strip() for line in raw_lines if line.strip())
+        if not txt:
+            raise ValueError("Banner text must contain at least one non-empty line.")
+        return txt
 
 
 class ProceedingsConfig(BaseModel):

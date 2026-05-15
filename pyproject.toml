@@ -20,7 +20,6 @@ dependencies = [
     "pypdfium2>=5.8.0",
     "reportlab>=4.4.9",
     "scikit-image>=0.26.0",
-    "svglib>=1.6.0",
     "tqdm>=4.67.3",
     "unidecode>=1.4.0",
 ]

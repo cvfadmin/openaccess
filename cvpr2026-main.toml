@@ -7,7 +7,6 @@ output_path = "output-camera-ready-2025-05-18-a/"
 zip_output_path = "output-camera-ready-2025-05-18-a.zip"
 
 [banner]
-input_path = "input-assets/banners"
 text = """
 This CVPR paper is the Open Access version, provided by the Computer Vision Foundation.
 Except for this watermark, it is identical to the accepted version;
