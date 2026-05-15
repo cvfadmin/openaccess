@@ -1,11 +1,35 @@
+import csv
+import io
+import urllib.request
 from collections import Counter
 
-import pandas as pd
 from pydantic import BaseModel, model_validator
 from typing_extensions import Self
 
 from cvf.proceedings_stamper.config import ProceedingsConfig
 from cvf.proceedings_stamper.paper import Paper
+
+
+def read_csv_from_url(url: str) -> tuple[list[str], list[dict[str, str | None]]]:
+    """Read CSV data with the parser defaults this project relied on.
+
+    Empty cells become None, and fully blank rows are skipped.
+    """
+    with urllib.request.urlopen(url) as response:
+        body = response.read().decode("utf-8-sig")
+
+    reader = csv.DictReader(io.StringIO(body))
+    fieldnames = reader.fieldnames or []
+    rows = []
+    for row in reader:
+        normalized_row = {
+            column_name: value if value != "" else None
+            for column_name, value in row.items()
+            if column_name is not None
+        }
+        if any(value is not None for value in normalized_row.values()):
+            rows.append(normalized_row)
+    return fieldnames, rows
 
 
 class PaperList(BaseModel):
@@ -15,7 +39,9 @@ class PaperList(BaseModel):
     @classmethod
     def read_paper_list(cls, config: ProceedingsConfig):
         """Parse the paper list from the spreadsheet specified in the config."""
-        df = pd.read_csv(str(config.spreadsheet.url))
+        spreadsheet_columns, spreadsheet_rows = read_csv_from_url(
+            str(config.spreadsheet.url)
+        )
 
         paper_list = []
         columns = config.spreadsheet.columns
@@ -23,18 +49,16 @@ class PaperList(BaseModel):
         errors = []
         for config_key, column_name in columns.model_dump().items():
             if config_key != "authors_separator":
-                if column_name not in df.columns:
+                if column_name not in spreadsheet_columns:
                     errors.append(
                         f"Spreadsheet is missing a column mentioned in the config file:\n    {config_key} = {column_name!r}"
                     )
         if errors:
             errors.append(
-                f"The spreadsheet has one of the following unaccounted columns: {set(df.columns) - set(columns.model_dump().values())}"
+                f"The spreadsheet has one of the following unaccounted columns: {set(spreadsheet_columns) - set(columns.model_dump().values())}"
             )
             raise ValueError("\n".join(errors))
-        for row_idx, row in df.iterrows():
-            row = row.fillna(None).to_dict()
-
+        for row in spreadsheet_rows:
             if row[columns.title] and row[columns.input_filename]:
                 filename = row[columns.input_filename]
                 if "\\" in filename:
