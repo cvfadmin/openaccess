@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+import sys
 from pathlib import Path
 
 os.environ.setdefault("PYDANTIC_ERRORS_INCLUDE_URL", "0")
@@ -24,8 +25,11 @@ app = App(help_on_error=True)
 
 def _stamp_paper(job):
     (paper, config) = job
-    paper.stamp(config)
-    return True, paper
+    try:
+        paper.stamp(config)
+        return True, paper, None
+    except Exception as exc:
+        return False, paper, exc
 
 
 @app.command(alias="run")
@@ -70,16 +74,32 @@ def stamp(
         _stamp_paper,
         [(paper, config) for paper in selected_papers],
     )
-    for result, paper in tqdm(
+    failures = []
+    for success, paper, exc in tqdm(
         selected_papers, unit="paper", total=N, desc="Stamping papers"
     ):
-        print(paper)
+        if success:
+            print(paper)
+        else:
+            failures.append((paper, exc))
+            print(f"FAILED: {paper} — {exc}")
+
+    if failures:
+        print(f"\n{len(failures)} paper(s) failed:")
+        for paper, exc in failures:
+            print(f"  {paper.output_path}: {exc!r}")
+        print(
+            f"CVF note: you can use '-S' to only re-run failed papers, or debug further with the 'shell' command. See '--help' for details."
+        )
+        sys.exit(1)
 
     if csv:
         write_csv(config_path)
     if report:
         if match_output_name is not None:
-            print("Warning: --match-output-name is set, skipping report generation.")
+            print(
+                "Skipping report generation because --match-output-name / -S was used."
+            )
         else:
             write_report(config_path, limit=limit, jobs=jobs)
 
