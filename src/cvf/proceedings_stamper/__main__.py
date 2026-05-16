@@ -18,7 +18,7 @@ from cvf.proceedings_stamper.config import ProceedingsConfig
 from cvf.proceedings_stamper.img import beside, crop, hcat, vcat  # noqa: F401
 from cvf.proceedings_stamper.paper import emit_csv
 from cvf.proceedings_stamper.paper_list import PaperList
-from cvf.proceedings_stamper.pdf_io import pdf_to_rgb  # noqa: F401
+from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file, pdf_to_rgb  # noqa: F401
 from cvf.proceedings_stamper.report import generate_report
 
 app = App(help_on_error=True)
@@ -56,7 +56,7 @@ def stamp(
     dry_run: Annotated[
         bool,
         Parameter(
-            name=["--dry-run"],
+            name=["--dry-run", "-n"],
             help="Print papers that would be stamped without writing any output",
         ),
     ] = False,
@@ -113,7 +113,7 @@ def stamp(
         for paper, exc in failures:
             rprint(f"[red]{paper.output_path}[/red]\n{exc!r}")
         rprint(
-            f"\nCVF note: you can use '-S' to only re-run failed papers, or debug further with the 'shell' command. See '--help' for details."
+            "\nCVF note: you can use '-S' to only re-run failed papers, or debug further with the 'shell' command. See '--help' for details."
         )
         sys.exit(1)
 
@@ -134,6 +134,43 @@ def write_csv(config_path: Path):
     config = ProceedingsConfig.from_toml(config_path)
     papers = PaperList.read_paper_list(config)
     emit_csv(papers, config)
+
+
+@app.command
+def verify(config_path: Path):
+    "Check that all output files exist, have the correct page count, and that papers.csv exists."
+    config = ProceedingsConfig.from_toml(config_path)
+    papers = PaperList.read_paper_list(config)
+
+    errors = []
+
+    csv_path = config.output_path / config.csv_output_path
+    if not csv_path.exists():
+        errors.append(f"Missing papers.csv: {csv_path}")
+
+    for paper in papers.papers:
+        if not paper.output_path.exists():
+            errors.append(f"Missing output: {paper.output_path}")
+            continue
+        try:
+            with nice_open_pdf_file(paper.output_path) as pdf:
+                actual = len(pdf.pages)
+            if paper.start_page is not None and paper.last_page is not None:
+                expected = paper.last_page - paper.start_page + 1
+                if actual != expected:
+                    errors.append(
+                        f"Wrong page count for {paper.output_path}: expected {expected}, got {actual}"
+                    )
+        except Exception as exc:
+            errors.append(f"Could not open {paper.output_path}: {exc}")
+
+    if errors:
+        for err in errors:
+            print(err)
+        print(f"\n{len(errors)} error(s) found.")
+        sys.exit(1)
+    else:
+        print(f"All OK ({len(papers.papers)} papers, csv at {csv_path})")
 
 
 @app.command
