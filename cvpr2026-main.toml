@@ -1,11 +1,11 @@
-acronym = "CVPR"
-long_name = "IEEE Conference on Computer Vision and Pattern Recognition"
-year = 2025
+acronym            = "CVPR"
+long_name          = "IEEE Conference on Computer Vision and Pattern Recognition"
+year               = 2025
 
-input_path = "/Users/kimmy/Downloads/CVPR 2026/Files for CVF - CVPR, CVPRW, CVPRF/CVPR 2026 - Main Conference/CVPR 2026 - Paper PDF Files/"
-output_path = "output-camera-ready-2025-05-18-a/"
-zip_output_path = "output-camera-ready-2025-05-18-a.zip"
-report_output_path = "output-camera-ready-2025-05-18-a.html"
+input_path         = "/Users/kimmy/Downloads/CVPR 2026/Files for CVF - CVPR, CVPRW, CVPRF/CVPR 2026 - Main Conference/CVPR 2026 - Paper PDF Files/"
+output_path        = "/Users/kimmy/Downloads/CVPR 2026/output-camera-ready-2025-05-18-a/"
+zip_output_path    = "/Users/kimmy/Downloads/CVPR 2026/output-camera-ready-2025-05-18-a.zip"
+report_output_path = "/Users/kimmy/Downloads/CVPR 2026/output-camera-ready-2025-05-18-a.html"
 
 [banner]
 text = """
@@ -18,11 +18,11 @@ the final published version of the proceedings is available on IEEE Xplore.
 url = "https://docs.google.com/spreadsheets/d/1LslqbillvmRiqHfHRqpAmYz6p08_bv7P5G-dxrBONeo/export?format=csv"
 
 [spreadsheet.columns]
-title = "Title (Corrected)"
-abstract = "Abstract (Cleaned)"
-authors = "Authors (Corrected)"
-authors_separator = ","
-input_filename = "Camera-Ready File (Corrected)"
+title                 = "Title (Corrected)"
+abstract              = "Abstract (Cleaned)"
+authors               = "Authors (Corrected)"
+authors_separator     = ","
+input_filename        = "Camera-Ready File (Corrected)"
 supplemental_filename = "Supplemental File (Corrected)"
-first_page = "First Page"
-last_page = "Last Page"
+first_page            = "First Page"
+last_page             = "Last Page"

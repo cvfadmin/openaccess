@@ -266,7 +266,11 @@ class Paper(BaseModel):
             path = self.input_path
         elif which == "output":
             path = self.output_path
-        return list(pdf_to_rgb(path, format=format, dpi=dpi, pages=pages))
+        rendered = list(pdf_to_rgb(path, format=format, dpi=dpi, pages=pages))
+        if pages == "first":
+            return rendered[:1]
+        else:
+            return rendered
 
 
 def strip_latex_characters(text):

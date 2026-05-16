@@ -3,26 +3,48 @@
 
 <style>
 td img {
-    height: 5rem;
+    height: 7rem;
     width: auto;
 }
 </style>
 
+<section>
 <table>
 <tr>
-    {% for paper in papers %}
-    <td>{{paper | show(width_inches=1, height_inches=2, anchor="bottom_center", dpi=72, format="WEBP", quality=80)}}</td>
-    {% endfor %}
+    <th>Paper</th>
+    <th>First page banner</th>
+    <th>Page number stamps (crops of bottom pages)</th>
+    <th>Original</th>
 </tr>
+{% for paper in papers %}
 <tr>
-    {% for paper in papers %}
+    <td>
+        <p>
+            <strong>{{ paper.title }}</strong><br />
+            <strong>Input:</strong> {{ paper.input_path.name }}<br />
+            <strong>Output:</strong> {{ paper.sensible_output_basename }}
+        </p>
+    </td>
+    <td>{{paper | show(height_inches=2, anchor="top_center", dpi=36, format="WEBP", quality=60, pages="first")}}</td>
+    <td>{{paper | show(width_inches=0.7, height_inches=1.0, anchor="bottom_center", dpi=72, format="WEBP", quality=80)}}</td>
     <td>{{paper | show(dpi=36, format="WEBP", quality=60)}}</td>
-    {% endfor %}
 </tr>
-<tr>
-    {% for paper in papers %}
-    <td>{{ paper.sensible_output_basename }}</td>
-    {% endfor %}
-</tr>
+{% endfor %}
+</table>
+</section>
+
+<section>
+<h2>Quick check: First pages</h2>
+{% for paper in papers %}
+{{paper | show(dpi=36, format="WEBP", quality=60, pages="first")}}
+{% endfor %}
+</section>
+
+<section>
+{% if next_filename %}
+<h2>
+    <a href="{{ next_filename }}">Next</a>
+</h2>
+{% endif %}
 
 </section>

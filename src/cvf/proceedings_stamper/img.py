@@ -6,7 +6,7 @@ from typing import Literal
 from matplotlib.pylab import isin
 from PIL import Image
 
-BG_COLOR = (192, 192, 192)
+BG_COLOR = (224, 224, 224)
 
 
 def beside(
