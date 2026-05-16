@@ -82,12 +82,12 @@ class PaperList(BaseModel):
                     ],
                     conference_long=config.long_name,
                     year=config.year,
-                    start_page=int(row[columns.first_page])
-                    if columns.first_page
-                    else None,
-                    last_page=int(row[columns.last_page])
-                    if columns.last_page
-                    else None,
+                    start_page=(
+                        int(row[columns.first_page]) if columns.first_page else None
+                    ),
+                    last_page=(
+                        int(row[columns.last_page]) if columns.last_page else None
+                    ),
                     supplemental_filename=row[columns.supplemental_filename],
                     output_filename_prefix=(
                         row[columns.output_filename_prefix]
@@ -100,7 +100,7 @@ class PaperList(BaseModel):
                         # if row[COL_PAGE_NUMBER_LOCATIONS]
                         # else None
                     ),
-                    input_path=config.input_path / row[columns.input_filename],
+                    input_path=config.input_path / filename,
                     output_directory=config.output_path,
                 )
                 paper_list.append(paper)

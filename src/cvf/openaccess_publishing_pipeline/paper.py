@@ -412,6 +412,7 @@ def emit_csv(
         for paper in papers:
             pathname = (
                 f"content_{config.acronym}_{config.year}/papers/"
+                + (paper.output_filename_prefix or "")
                 + paper.sensible_output_basename
             )
             supplemental_pathname = "None"
