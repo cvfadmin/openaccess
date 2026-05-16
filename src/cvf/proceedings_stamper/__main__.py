@@ -12,6 +12,7 @@ from tqdm.rich import tqdm
 
 from cvf.proceedings_stamper.config import ProceedingsConfig
 from cvf.proceedings_stamper.img import beside, crop, hcat, vcat  # noqa: F401
+from cvf.proceedings_stamper.paper import emit_csv
 from cvf.proceedings_stamper.paper_list import PaperList
 from cvf.proceedings_stamper.pdf_io import pdf_to_rgb  # noqa: F401
 from cvf.proceedings_stamper.report import generate_report
@@ -62,6 +63,18 @@ def stamp(
     )
     for result, paper in tqdm(selected_papers, unit="paper", total=N):
         print(paper)
+
+    if limit is None:
+        emit_csv(papers, config)
+
+
+@app.command
+def to_csv(config_path: Path):
+    with open(config_path, "rb") as f:
+        config = ProceedingsConfig.model_validate(tomllib.load(f))
+
+        papers = PaperList.read_paper_list(config)
+    emit_csv(papers, config)
 
 
 @app.command
@@ -120,15 +133,21 @@ def to_report(
 
     papers = papers[:limit]
 
+    n_groups = (len(papers) + group_size - 1) // group_size
     for group_num, i in enumerate(range(0, len(papers), group_size)):
         group = papers[i : i + group_size]
-        with open(
-            config.report_output_path.with_stem(
-                f"{config.report_output_path.stem}_{group_num:03d}"
-            ),
-            "w",
-        ) as f:
-            f.write(generate_report(group))
+        group_name = config.report_output_path.with_stem(
+            f"{config.report_output_path.stem}-{group_num + 1:05d}-of-{n_groups:05d}"
+        )
+        if group_num < n_groups - 1:
+            next_group_name = config.report_output_path.with_stem(
+                f"{config.report_output_path.stem}-{group_num + 2:05d}-of-{n_groups:05d}"
+            )
+        else:
+            next_group_name = None
+        report = generate_report(papers=group, next_filename=next_group_name, jobs=jobs)
+        with open(group_name, "w") as f:
+            f.write(report)
 
-            print(f"Wrote {config.report_output_path}")
+            print(f"Wrote {group_name} ({len(group)} papers)")
             print(f"{f.tell() / 1024 / 1024} MB")
