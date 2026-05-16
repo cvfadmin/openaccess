@@ -11,6 +11,7 @@ import multiprocess
 from cyclopts import App, Parameter
 from jinja2 import Environment, PackageLoader
 from PIL import Image
+from rich import print as rprint
 from tqdm.rich import tqdm
 
 from cvf.proceedings_stamper.config import ProceedingsConfig
@@ -38,7 +39,7 @@ def stamp(
     *,
     limit: Annotated[
         int | None,
-        Parameter(name=["--limit", "-n"], help="Only process the first N papers"),
+        Parameter(name=["--limit", "-l"], help="Only process the first N papers"),
     ] = None,
     jobs: Annotated[
         int, Parameter(name=["--jobs", "-j"], help="Number of jobs to run in parallel")
@@ -52,6 +53,20 @@ def stamp(
     ] = None,
     csv: Annotated[bool, Parameter(help="Add papers.csv after stamping")] = True,
     report: Annotated[bool, Parameter(help="Generate report after stamping")] = True,
+    dry_run: Annotated[
+        bool,
+        Parameter(
+            name=["--dry-run"],
+            help="Print papers that would be stamped without writing any output",
+        ),
+    ] = False,
+    overwrite: Annotated[
+        bool,
+        Parameter(
+            name=["--overwrite", "-f"],
+            help="Re-stamp papers whose output files already exist (default: skip them)",
+        ),
+    ] = False,
 ):
     "Stamp all papers from the config file. See '--help' for options about limiting, parallelization, etc."
     config = ProceedingsConfig.from_toml(config_path)
@@ -65,10 +80,19 @@ def stamp(
             for paper in selected_papers
             if match_output_name in str(paper.output_path)
         ]
+    if not overwrite:
+        selected_papers = [p for p in selected_papers if not p.output_path.exists()]
+
     if limit is not None:
         selected_papers = selected_papers[:limit]
 
     N = len(selected_papers)
+
+    if dry_run:
+        for paper in selected_papers:
+            print(paper.output_path)
+        print(f"\n{N} paper(s) would be stamped.")
+        return
 
     selected_papers = multiprocess.Pool(jobs).imap_unordered(
         _stamp_paper,
@@ -85,11 +109,11 @@ def stamp(
             print(f"FAILED: {paper} — {exc}")
 
     if failures:
-        print(f"\n{len(failures)} paper(s) failed:")
+        rprint(f"\n[bold white on red]{len(failures)} paper(s) failed:")
         for paper, exc in failures:
-            print(f"  {paper.output_path}: {exc!r}")
-        print(
-            f"CVF note: you can use '-S' to only re-run failed papers, or debug further with the 'shell' command. See '--help' for details."
+            rprint(f"[red]{paper.output_path}[/red]\n{exc!r}")
+        rprint(
+            f"\nCVF note: you can use '-S' to only re-run failed papers, or debug further with the 'shell' command. See '--help' for details."
         )
         sys.exit(1)
 
