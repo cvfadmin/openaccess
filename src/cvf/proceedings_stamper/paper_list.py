@@ -57,7 +57,7 @@ class PaperList(BaseModel):
         # are all columns present?
         errors = []
         for config_key, column_name in columns.model_dump().items():
-            if config_key != "authors_separator":
+            if config_key != "authors_separator" and column_name is not None:
                 if column_name not in spreadsheet_columns:
                     errors.append(
                         f"Spreadsheet is missing a column mentioned in the config file:\n    {config_key} = {column_name!r}"
@@ -89,7 +89,11 @@ class PaperList(BaseModel):
                     if columns.last_page
                     else None,
                     supplemental_filename=row[columns.supplemental_filename],
-                    # output_filename_prefix=row[columns.output_filename_prefix],
+                    output_filename_prefix=(
+                        row[columns.output_filename_prefix]
+                        if columns.output_filename_prefix
+                        else None
+                    ),
                     page_number_locations=(
                         None
                         # json.loads(row[COL_PAGE_NUMBER_LOCATIONS])
@@ -113,14 +117,12 @@ class PaperList(BaseModel):
             )
 
         # Are output filenames unique?
-        if len(set([paper.sensible_output_basename for paper in paper_list])) != len(
-            paper_list
-        ):
-            counter = Counter([paper.sensible_output_basename for paper in paper_list])
+        if len(set(paper.output_path for paper in paper_list)) != len(paper_list):
+            counter = Counter(paper.output_path for paper in paper_list)
             duplicate_papers = [
                 str(paper)
                 for paper in paper_list
-                if counter[paper.sensible_output_basename] > 1
+                if counter[paper.output_path] > 1
             ]
             raise ValueError(
                 f"Papers don't have unique output filenames!\nA list of duplicates: {'\n\n'.join(duplicate_papers)}"

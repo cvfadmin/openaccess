@@ -51,6 +51,9 @@ class Paper(BaseModel):
     supplemental_filename: str | None
     """Basename of the supplemental material file, if it exists."""
 
+    output_filename_prefix: str | None = None
+    """Per-paper output path prefix (may include subdirectory). E.g. 'workshop_5/5-' places the paper at output_directory/workshop_5/5-<basename>."""
+
     pagenumber_tile: Any = None
     page_tile: Any = None
 
@@ -73,7 +76,10 @@ class Paper(BaseModel):
 
     @property
     def output_path(self):
-        return self.output_directory / self.sensible_output_basename
+        basename = self.sensible_output_basename
+        if self.output_filename_prefix:
+            return self.output_directory / (self.output_filename_prefix + basename)
+        return self.output_directory / basename
 
     def __str__(self):
         return "\n".join(
@@ -405,7 +411,7 @@ def emit_csv(
         writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar="\\")
         for paper in papers:
             pathname = (
-                f"content_{config.acronym}_{config.year}/papers"
+                f"content_{config.acronym}_{config.year}/papers/"
                 + paper.sensible_output_basename
             )
             supplemental_pathname = "None"

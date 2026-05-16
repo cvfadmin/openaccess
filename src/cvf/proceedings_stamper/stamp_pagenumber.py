@@ -12,6 +12,8 @@ PAGE_NUMBER_EROSION_FOOTPRINT = morphology.footprint_rectangle(
     decomposition="separable",
 )
 
+PAGE_NUMBER_FONT = "Times-Roman"
+
 
 def create_pagenumber_stamp(page, out_page_number, page_stamp_location):
     """Returns a PikePDF "Page" instance that shows the stamp with
@@ -38,7 +40,7 @@ def create_pagenumber_stamp(page, out_page_number, page_stamp_location):
         stroke=False,
     )
     c.setFillColorRGB(0.5, 0.5, 0.5)
-    c.setFont("Times-Roman", 9)
+    c.setFont(PAGE_NUMBER_FONT, 9)
     c.drawCentredString(
         x=pagewidth / 2.0,
         y=page_stamp_location,

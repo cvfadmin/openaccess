@@ -1,7 +1,6 @@
 import tomllib
 import typing
 from pathlib import Path
-
 from typing import Annotated
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, field_validator
@@ -36,6 +35,9 @@ class PaperListSpreadsheetColumnsConfig(BaseModel):
 
     last_page: str | None
     "Column of the last page number of the paper in the proceedings output. Paper PDFs must be (last_page - first_page + 1) pages long."
+
+    output_filename_prefix: str | None = None
+    "Prefix output filenames with this column when set. For example, if a row has this column set to 'workshop_5/5-', the PDF will be placed in `output_path/workshop_5/5-paper.pdf` instead of `output_path/paper.pdf`."
 
 
 class PaperListSpreadsheetConfig(BaseModel):
@@ -104,7 +106,11 @@ class ProceedingsConfig(BaseModel):
             data = tomllib.load(f)
         for field_name, field_info in cls.model_fields.items():
             annotation = field_info.annotation
-            args = typing.get_args(annotation) if typing.get_origin(annotation) is typing.Annotated else ()
+            args = (
+                typing.get_args(annotation)
+                if typing.get_origin(annotation) is typing.Annotated
+                else ()
+            )
             if _RelativeToOutput in args:
                 continue
             inner = args[0] if args else annotation
