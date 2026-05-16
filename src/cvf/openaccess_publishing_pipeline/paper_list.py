@@ -6,8 +6,8 @@ from collections import Counter
 from pydantic import BaseModel, model_validator
 from typing_extensions import Self
 
-from cvf.proceedings_stamper.config import ProceedingsConfig
-from cvf.proceedings_stamper.paper import Paper
+from cvf.openaccess_publishing_pipeline.config import ProceedingsConfig
+from cvf.openaccess_publishing_pipeline.paper import Paper
 
 
 def read_csv_from_url(url: str) -> tuple[list[str], list[dict[str, str | None]]]:
@@ -120,9 +120,7 @@ class PaperList(BaseModel):
         if len(set(paper.output_path for paper in paper_list)) != len(paper_list):
             counter = Counter(paper.output_path for paper in paper_list)
             duplicate_papers = [
-                str(paper)
-                for paper in paper_list
-                if counter[paper.output_path] > 1
+                str(paper) for paper in paper_list if counter[paper.output_path] > 1
             ]
             raise ValueError(
                 f"Papers don't have unique output filenames!\nA list of duplicates: {'\n\n'.join(duplicate_papers)}"

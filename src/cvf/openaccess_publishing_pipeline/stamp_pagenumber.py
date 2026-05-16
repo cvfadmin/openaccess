@@ -5,7 +5,7 @@ import pikepdf
 from reportlab.pdfgen import canvas
 from skimage import morphology
 
-from cvf.proceedings_stamper.pdf_io import pdf_to_rgb
+from cvf.openaccess_publishing_pipeline.pdf_io import pdf_to_rgb
 
 PAGE_NUMBER_EROSION_FOOTPRINT = morphology.footprint_rectangle(
     (18, 18),

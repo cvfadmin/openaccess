@@ -11,11 +11,16 @@ from multiprocess import Pool
 from PIL import Image
 from tqdm.rich import tqdm
 
-from cvf.proceedings_stamper.config import ProceedingsConfig
-from cvf.proceedings_stamper.img import beside, crop, hcat, vcat  # noqa: F401
-from cvf.proceedings_stamper.paper import Paper
-from cvf.proceedings_stamper.paper_list import PaperList
-from cvf.proceedings_stamper.pdf_io import pdf_to_rgb  # noqa: F401
+from cvf.openaccess_publishing_pipeline.config import ProceedingsConfig
+from cvf.openaccess_publishing_pipeline.img import (  # noqa: F401
+    beside,
+    crop,
+    hcat,
+    vcat,
+)
+from cvf.openaccess_publishing_pipeline.paper import Paper
+from cvf.openaccess_publishing_pipeline.paper_list import PaperList
+from cvf.openaccess_publishing_pipeline.pdf_io import pdf_to_rgb  # noqa: F401
 
 
 class DeferredTemplateRenderer:
@@ -68,7 +73,7 @@ def show(
 
 def generate_report(jobs: int | None = None, **kwargs):
     env = Environment(
-        loader=PackageLoader("cvf.proceedings_stamper"),
+        loader=PackageLoader("cvf.openaccess_publishing_pipeline"),
         autoescape=select_autoescape(),
     )
     env.filters["str"] = str

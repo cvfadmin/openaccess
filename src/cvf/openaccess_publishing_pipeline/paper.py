@@ -8,10 +8,10 @@ import unidecode
 from nameparser import HumanName
 from pydantic import BaseModel, ConfigDict
 
-from cvf.proceedings_stamper import stamp_firstpage_banner, stamp_pagenumber
-from cvf.proceedings_stamper.config import ProceedingsConfig
-from cvf.proceedings_stamper.img import beside
-from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file, pdf_to_rgb
+from cvf.openaccess_publishing_pipeline import stamp_firstpage_banner, stamp_pagenumber
+from cvf.openaccess_publishing_pipeline.config import ProceedingsConfig
+from cvf.openaccess_publishing_pipeline.img import beside
+from cvf.openaccess_publishing_pipeline.pdf_io import nice_open_pdf_file, pdf_to_rgb
 
 
 class Paper(BaseModel):

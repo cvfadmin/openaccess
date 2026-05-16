@@ -5,7 +5,7 @@ from typing import NamedTuple
 from pikepdf import Page, Pdf
 from reportlab.pdfgen import canvas
 
-from cvf.proceedings_stamper.config import BannerConfig
+from cvf.openaccess_publishing_pipeline.config import BannerConfig
 
 BANNER_WIDTH = 515.0
 BANNER_HEIGHT = 34.0

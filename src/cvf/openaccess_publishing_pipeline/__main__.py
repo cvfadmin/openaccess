@@ -14,12 +14,20 @@ from PIL import Image
 from rich import print as rprint
 from tqdm.rich import tqdm
 
-from cvf.proceedings_stamper.config import ProceedingsConfig
-from cvf.proceedings_stamper.img import beside, crop, hcat, vcat  # noqa: F401
-from cvf.proceedings_stamper.paper import emit_csv
-from cvf.proceedings_stamper.paper_list import PaperList
-from cvf.proceedings_stamper.pdf_io import nice_open_pdf_file, pdf_to_rgb  # noqa: F401
-from cvf.proceedings_stamper.report import generate_report
+from cvf.openaccess_publishing_pipeline.config import ProceedingsConfig
+from cvf.openaccess_publishing_pipeline.img import (  # noqa: F401
+    beside,
+    crop,
+    hcat,
+    vcat,
+)
+from cvf.openaccess_publishing_pipeline.paper import emit_csv
+from cvf.openaccess_publishing_pipeline.paper_list import PaperList
+from cvf.openaccess_publishing_pipeline.pdf_io import (  # noqa: F401
+    nice_open_pdf_file,
+    pdf_to_rgb,
+)
+from cvf.openaccess_publishing_pipeline.report import generate_report
 
 app = App(help_on_error=True)
 

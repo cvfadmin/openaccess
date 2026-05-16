@@ -159,7 +159,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cvf-paper-stamper"
+name = "cvf-openaccess-publishing-pipeline"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
