@@ -30,13 +30,13 @@ class DeferredTemplateRenderer:
 
         return _filter
 
-    def resolve(self, template_str, jobs: int | None = None):
+    def resolve(self, template_str, jobs: int | None = None, desc: str | None = None):
         pool = Pool(jobs)
         N = len(self.closures)
         results = pool.imap_unordered(
             lambda job: (job[0], job[1]()), self.closures.items()
         )
-        for key, value in tqdm(results, total=N):
+        for key, value in tqdm(results, total=N, desc=desc):
             template_str = template_str.replace(key, value)
         return template_str
 
@@ -78,4 +78,6 @@ def generate_report(jobs: int | None = None, **kwargs):
 
     template = env.get_template("report_template.jinja2")
 
-    return deferred_image_loader.resolve(template.render(**kwargs), jobs=jobs)
+    return deferred_image_loader.resolve(
+        template.render(**kwargs), jobs=jobs, desc="Rendering report"
+    )

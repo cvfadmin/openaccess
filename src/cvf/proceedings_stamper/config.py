@@ -1,4 +1,8 @@
+import tomllib
+import typing
 from pathlib import Path
+
+from typing import Annotated
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, field_validator
 from pydantic.types import DirectoryPath
@@ -58,6 +62,10 @@ class BannerConfig(BaseModel):
         return txt
 
 
+class _RelativeToOutput:
+    """Marks a Path field as relative to output_path rather than the config file."""
+
+
 class ProceedingsConfig(BaseModel):
     model_config = ConfigDict(use_attribute_docstrings=True, extra="forbid")
 
@@ -76,7 +84,7 @@ class ProceedingsConfig(BaseModel):
     output_path: Path
     """Path to output files."""
 
-    csv_output_path: Path = Path("papers.csv")
+    csv_output_path: Annotated[Path, _RelativeToOutput] = Path("papers.csv")
     """Path to the output CSV file relative to output_path."""
 
     zip_output_path: Path
@@ -88,6 +96,22 @@ class ProceedingsConfig(BaseModel):
     spreadsheet: PaperListSpreadsheetConfig
 
     banner: BannerConfig
+
+    @classmethod
+    def from_toml(cls, config_path: Path) -> "ProceedingsConfig":
+        config_dir = Path(config_path).resolve().parent
+        with open(config_path, "rb") as f:
+            data = tomllib.load(f)
+        for field_name, field_info in cls.model_fields.items():
+            annotation = field_info.annotation
+            args = typing.get_args(annotation) if typing.get_origin(annotation) is typing.Annotated else ()
+            if _RelativeToOutput in args:
+                continue
+            inner = args[0] if args else annotation
+            if inner is Path or (isinstance(inner, type) and issubclass(inner, Path)):
+                if field_name in data and not Path(data[field_name]).is_absolute():
+                    data[field_name] = str(config_dir / data[field_name])
+        return cls.model_validate(data)
 
     @field_validator("acronym")
     def validate_acronym(cls, v: str) -> str:

@@ -1,7 +1,9 @@
 import base64
 import io
-import tomllib
+import os
 from pathlib import Path
+
+os.environ.setdefault("PYDANTIC_ERRORS_INCLUDE_URL", "0")
 from typing import Annotated
 
 import multiprocess
@@ -17,7 +19,7 @@ from cvf.proceedings_stamper.paper_list import PaperList
 from cvf.proceedings_stamper.pdf_io import pdf_to_rgb  # noqa: F401
 from cvf.proceedings_stamper.report import generate_report
 
-app = App()
+app = App(help_on_error=True)
 
 
 def _stamp_paper(job):
@@ -26,11 +28,17 @@ def _stamp_paper(job):
     return True, paper
 
 
-@app.command
+@app.command(alias="run")
 def stamp(
     config_path: Path,
-    limit: int | None = None,
-    jobs: Annotated[int, Parameter(name=["--jobs", "-j"])] = 8,
+    *,
+    limit: Annotated[
+        int | None,
+        Parameter(name=["--limit", "-n"], help="Only process the first N papers"),
+    ] = None,
+    jobs: Annotated[
+        int, Parameter(name=["--jobs", "-j"], help="Number of jobs to run in parallel")
+    ] = 8,
     match_output_name: Annotated[
         str | None,
         Parameter(
@@ -38,11 +46,12 @@ def stamp(
             help="Only stamp for papers whose output filename contains this string",
         ),
     ] = None,
+    csv: Annotated[bool, Parameter(help="Add papers.csv after stamping")] = True,
+    report: Annotated[bool, Parameter(help="Generate report after stamping")] = True,
 ):
-    with open(config_path, "rb") as f:
-        config = ProceedingsConfig.model_validate(tomllib.load(f))
-
-        papers = PaperList.read_paper_list(config)
+    "Stamp all papers from the config file. See '--help' for options about limiting, parallelization, etc."
+    config = ProceedingsConfig.from_toml(config_path)
+    papers = PaperList.read_paper_list(config)
 
     selected_papers = papers.papers
 
@@ -61,48 +70,41 @@ def stamp(
         _stamp_paper,
         [(paper, config) for paper in selected_papers],
     )
-    for result, paper in tqdm(selected_papers, unit="paper", total=N):
+    for result, paper in tqdm(
+        selected_papers, unit="paper", total=N, desc="Stamping papers"
+    ):
         print(paper)
 
-    if limit is None:
-        emit_csv(papers, config)
+    if csv:
+        write_csv(config_path)
+    if report:
+        if match_output_name is not None:
+            print("Warning: --match-output-name is set, skipping report generation.")
+        else:
+            write_report(config_path, limit=limit, jobs=jobs)
 
 
 @app.command
-def to_csv(config_path: Path):
-    with open(config_path, "rb") as f:
-        config = ProceedingsConfig.model_validate(tomllib.load(f))
-
-        papers = PaperList.read_paper_list(config)
+def write_csv(config_path: Path):
+    "Save a paper list to output/papers.json. Run automatically as part of 'stamp'."
+    config = ProceedingsConfig.from_toml(config_path)
+    papers = PaperList.read_paper_list(config)
     emit_csv(papers, config)
 
 
 @app.command
-def to_json(config_path: Path):
-    """Print the paper list parsed from the spreadsheet in the config file as JSON."""
-    with open(config_path, "rb") as f:
-        config = ProceedingsConfig.model_validate(tomllib.load(f))
-
-        papers = PaperList.read_paper_list(config)
-    print(papers.model_dump_json(indent=2))
-
-
-@app.command
-def pprint(config_path: Path):
-    """Print the paper list parsed from the spreadsheet in the config file."""
-    with open(config_path, "rb") as f:
-        config = ProceedingsConfig.model_validate(tomllib.load(f))
-
-        papers = PaperList.read_paper_list(config)
+def show_json(config_path: Path):
+    """Print a paper list as JSON."""
+    config = ProceedingsConfig.from_toml(config_path)
+    papers = PaperList.read_paper_list(config)
     print(papers.model_dump_json(indent=2))
 
 
 @app.command
 def shell(config_path: Path):
-    """Start IPython with papers loaded"""
-    with open(config_path, "rb") as f:
-        config = ProceedingsConfig.model_validate(tomllib.load(f))
-        papers = PaperList.read_paper_list(config)
+    """Start an IPython shell with a paper list loaded."""
+    config = ProceedingsConfig.from_toml(config_path)
+    papers = PaperList.read_paper_list(config)
 
     from IPython.terminal.embed import InteractiveShellEmbed
 
@@ -118,18 +120,21 @@ def shell(config_path: Path):
 
 
 @app.command
-def to_report(
+def write_report(
     config_path: Path,
     *,
-    limit: int | None = None,
-    jobs: int = 8,
+    limit: Annotated[
+        int | None,
+        Parameter(name=["--limit", "-n"], help="Only process the first N papers"),
+    ] = None,
+    jobs: Annotated[
+        int, Parameter(name=["--jobs", "-j"], help="Number of jobs to run in parallel")
+    ] = 8,
     group_size: int = 300,
 ):
-    """Convert all papers to PNG images and save them to the specified output directory."""
-    with open(config_path, "rb") as f:
-        config = ProceedingsConfig.model_validate(tomllib.load(f))
-
-        papers = PaperList.read_paper_list(config)
+    """Generate a paper list report used for quality assurance. Run automatically as part of 'stamp'."""
+    config = ProceedingsConfig.from_toml(config_path)
+    papers = PaperList.read_paper_list(config)
 
     papers = papers[:limit]
 
@@ -146,8 +151,7 @@ def to_report(
         else:
             next_group_name = None
         report = generate_report(papers=group, next_filename=next_group_name, jobs=jobs)
-        with open(group_name, "w") as f:
-            f.write(report)
-
-            print(f"Wrote {group_name} ({len(group)} papers)")
-            print(f"{f.tell() / 1024 / 1024} MB")
+        group_name.parent.mkdir(exist_ok=True, parents=True)
+        group_name.write_text(report)
+        print(f"Wrote {group_name} ({len(group)} papers)")
+        print(f"{group_name.stat().st_size / 1024 / 1024} MB")
