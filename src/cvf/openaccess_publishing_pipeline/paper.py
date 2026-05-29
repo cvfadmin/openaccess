@@ -139,6 +139,8 @@ class Paper(BaseModel):
                     )
 
         # Guess page number locations.
+        # LaTeX default is to apply page numbers (1, 2, 3, ...) to each page.
+        # Some authors forget to turn off page numbering.
         if stamp_page_numbers and self.start_page is not None:
             if self.page_number_locations:
                 page_number_locations = self.page_number_locations

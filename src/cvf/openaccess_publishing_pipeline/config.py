@@ -89,7 +89,7 @@ class ProceedingsConfig(BaseModel):
     csv_output_path: Annotated[Path, _RelativeToOutput] = Path("papers.csv")
     """Path to the output CSV file relative to output_path."""
 
-    zip_output_path: Path
+    zip_output_path: Path | None = None
     """Path to the output zip file."""
 
     report_output_path: Path
