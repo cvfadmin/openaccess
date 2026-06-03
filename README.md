@@ -274,8 +274,31 @@ Note the followng changes for the workshop track:
 
 ## Invocation
 
+```shell
+# For help:
+$ uv run cvf-openaccess-publishing-pipeline --help
+$ uv run cvf-openaccess-publishing-pipeline run --help
 
-## Organizational structure
+# Stamp the workshop track:
+$ uv run cvf-openaccess-publishing-pipeline run /path/to/cvpr2026-workshops.toml
+$ uv run cvf-openaccess-publishing-pipeline run /path/to/cvpr2026-workshops.toml -n # dry run
+
+# First 10 papers:
+$ uv run cvf-openaccess-publishing-pipeline run /path/to/cvpr2026-workshops.toml 1-10
+
+# Print as JSON:
+$ uv run cvf-openaccess-publishing-pipeline show-json /path/to/cvpr2026-workshops.toml
+$ uv run cvf-openaccess-publishing-pipeline show-json /path/to/cvpr2026-workshops.toml | jq .title
+$ uv run cvf-openaccess-publishing-pipeline show-json /path/to/cvpr2026-workshops.toml 1-10 | jless # accepts slices
+
+# Generate QA reports:
+$ uv run cvf-openaccess-publishing-pipeline report /path/to/cvpr2026-workshops.toml
+
+# Start IPython shell with paper loaded for debugging:
+$ uv run cvf-openaccess-publishing-pipeline shell /path/to/cvpr2026-workshops.toml
+```
+
+## CVF / IEEE organizational structure
 
 This script manages all of the blue parts of the following flowchart:
 

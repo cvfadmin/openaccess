@@ -44,10 +44,12 @@ def _stamp_paper(job):
 
 
 SEARCH_HELP = """Which papers to stamp. Accepts:
-   - empty (all papers, default)
-   - a range: 1,2,3,5-10
-   - a slice: 100:150, :10, 50::2
-   - arbitrary text to match against author list, title, input filename, or output filename
+- empty (all papers, default)
+- ranges of paper indices: `1,2,3,5-10`. Paper indices are one-indexed.
+- slices in Python syntax: :5,100::10
+- arbitrary text to match against author list, title, input filename, or output filename
+
+Bare numbers are interpreted as paper indices. To search for 4029.pdf, be sure to include the ".pdf" extension.
 """
 
 
@@ -140,7 +142,7 @@ def stamp(
         verify(config_path)
 
 
-@app.command
+@app.command(alias="csv")
 def write_csv(config_path: Path):
     "Save a paper list to output/papers.json. Run automatically as part of 'stamp'."
     config = ProceedingsConfig.from_toml(config_path)
@@ -185,7 +187,7 @@ def verify(config_path: Path):
         print(f"All OK ({len(papers.papers)} papers, csv at {csv_path})")
 
 
-@app.command
+@app.command(alias=["json", "print"])
 def show_json(
     config_path: Path,
     pattern: Annotated[str | None, Parameter(help=SEARCH_HELP)] = None,
@@ -217,7 +219,7 @@ def shell(config_path: Path):
     )
 
 
-@app.command
+@app.command(alias="report")
 def write_report(
     config_path: Path,
     pattern: Annotated[str | None, Parameter(help=SEARCH_HELP)] = None,
