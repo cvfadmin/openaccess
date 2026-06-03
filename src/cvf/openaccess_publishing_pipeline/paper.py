@@ -185,11 +185,35 @@ class Paper(BaseModel):
             # Strip author-added review markup (e.g. /Square comment boxes,
             # /Popup, /FreeText). These live outside the content stream, so the
             # q/Q wrap above can't suppress them, and they show up as draggable
-            # objects in Preview. Keep /Link so hyperref-generated hyperlinks
-            # and cross-references survive.
+            # objects in Preview. Use a denylist rather than an allowlist:
+            # some papers embed video clips as /Screen and /Widget annotations
+            # (LaTeX animate/media9 packages) whose appearance streams hold the
+            # visible figure frames, so removing unknown subtypes would blank
+            # out their figures. /Link survives so hyperref-generated
+            # hyperlinks and cross-references do too.
+            review_markup_subtypes = {
+                "/Text",
+                "/FreeText",
+                "/Square",
+                "/Circle",
+                "/Polygon",
+                "/PolyLine",
+                "/Highlight",
+                "/Underline",
+                "/Squiggly",
+                "/StrikeOut",
+                "/Caret",
+                "/Stamp",
+                "/Ink",
+                "/Popup",
+                "/FileAttachment",
+                "/Sound",
+            }
             if "/Annots" in page:
                 page["/Annots"] = [
-                    a for a in page["/Annots"] if str(a.get("/Subtype", "")) == "/Link"
+                    a
+                    for a in page["/Annots"]
+                    if str(a.get("/Subtype", "")) not in review_markup_subtypes
                 ]
 
             # Add the banner to the first page
