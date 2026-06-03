@@ -17,6 +17,9 @@ from cvf.openaccess_publishing_pipeline.pdf_io import nice_open_pdf_file, pdf_to
 class Paper(BaseModel):
     """A record of one single paper in the proceedings."""
 
+    index: int
+    "0-indexed paper number (by row order in the spreadsheet)."
+
     model_config = ConfigDict(
         use_attribute_docstrings=True, extra="forbid", arbitrary_types_allowed=True
     )

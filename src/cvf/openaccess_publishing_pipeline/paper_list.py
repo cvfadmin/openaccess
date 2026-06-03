@@ -67,12 +67,13 @@ class PaperList(BaseModel):
                 f"The spreadsheet has one of the following unaccounted columns: {set(spreadsheet_columns) - set(columns.model_dump().values())}"
             )
             raise ValueError("\n".join(errors))
-        for row in spreadsheet_rows:
+        for i, row in enumerate(spreadsheet_rows):
             if row[columns.title] and row[columns.input_filename]:
                 filename = row[columns.input_filename]
                 if "\\" in filename:
                     filename = filename.split("\\")[-1]
                 paper = Paper(
+                    index=i,
                     conference_acronym=config.acronym,
                     title=row[columns.title],
                     abstract=row[columns.abstract],
