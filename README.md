@@ -274,6 +274,7 @@ Note the followng changes for the workshop track:
 
 ## Invocation
 
+
 ## Organizational structure
 
 This script manages all of the blue parts of the following flowchart:

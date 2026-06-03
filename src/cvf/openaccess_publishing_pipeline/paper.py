@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 import unidecode
 from nameparser import HumanName
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 
 from cvf.openaccess_publishing_pipeline import stamp_firstpage_banner, stamp_pagenumber
 from cvf.openaccess_publishing_pipeline.config import ProceedingsConfig
@@ -74,8 +74,9 @@ class Paper(BaseModel):
     output_directory: Path
     """Absolute path to the paper output folder."""
 
+    @computed_field
     @property
-    def output_path(self):
+    def output_path(self) -> Path:
         basename = self.sensible_output_basename
         if self.output_filename_prefix:
             return self.output_directory / (self.output_filename_prefix + basename)
@@ -251,8 +252,9 @@ class Paper(BaseModel):
             pdf_out.save(f, normalize_content=True)
         temp_path.replace(self.output_path)
 
+    @computed_field
     @property
-    def sensible_output_basename(self):
+    def sensible_output_basename(self) -> str:
         """Generate a sensible final filename given a paper dictionary"""
         first_author = HumanName(self.authors[0])
         first_author.capitalize()
@@ -268,9 +270,12 @@ class Paper(BaseModel):
             )
         )
 
+    @computed_field
     @property
-    def sensible_supplemental_filename(self):
+    def sensible_supplemental_filename(self) -> str | None:
         """Generate a sensible final filename given a paper dictionary"""
+        if not self.supplemental_filename:
+            return None
         extension = self.supplemental_filename.split(".")[1]
         first_author = HumanName(self.authors[0])
         first_author.capitalize()

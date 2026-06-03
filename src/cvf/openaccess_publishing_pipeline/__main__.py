@@ -14,6 +14,7 @@ from PIL import Image
 from rich import print as rprint
 from tqdm.rich import tqdm
 
+from cvf.openaccess_publishing_pipeline.cli_pickaxe_search import apply_search_terms
 from cvf.openaccess_publishing_pipeline.config import ProceedingsConfig
 from cvf.openaccess_publishing_pipeline.img import (  # noqa: F401
     beside,
@@ -33,6 +34,7 @@ app = App(help_on_error=True)
 
 
 def _stamp_paper(job):
+    # for multiprocessing
     (paper, config) = job
     try:
         paper.stamp(config)
@@ -41,26 +43,30 @@ def _stamp_paper(job):
         return False, paper, exc
 
 
+SEARCH_HELP = """Which papers to stamp. Accepts:
+   - empty (all papers, default)
+   - a range: 1,2,3,5-10
+   - a slice: 100:150, :10, 50::2
+   - arbitrary text to match against author list, title, input filename, or output filename
+"""
+
+
 @app.command(alias="run")
 def stamp(
     config_path: Path,
-    *,
-    limit: Annotated[
-        int | None,
-        Parameter(name=["--limit", "-l"], help="Only process the first N papers"),
+    pattern: Annotated[
+        str | None,
+        Parameter(help=SEARCH_HELP),
     ] = None,
+    *,
     jobs: Annotated[
         int, Parameter(name=["--jobs", "-j"], help="Number of jobs to run in parallel")
     ] = 8,
-    match_output_name: Annotated[
-        str | None,
-        Parameter(
-            name=["--match-output-name", "-S"],
-            help="Only stamp for papers whose output filename contains this string",
-        ),
-    ] = None,
     csv: Annotated[bool, Parameter(help="Add papers.csv after stamping")] = True,
     report: Annotated[bool, Parameter(help="Generate report after stamping")] = True,
+    do_verify: Annotated[
+        bool, Parameter(name="--verify", help="Verify after stamping")
+    ] = True,
     dry_run: Annotated[
         bool,
         Parameter(
@@ -80,21 +86,22 @@ def stamp(
     config = ProceedingsConfig.from_toml(config_path)
     papers = PaperList.read_paper_list(config)
 
-    selected_papers = papers.papers
+    selected_papers = list(apply_search_terms(papers.papers, pattern))
 
-    if match_output_name is not None:
-        selected_papers = [
-            paper
-            for paper in selected_papers
-            if match_output_name in str(paper.output_path)
-        ]
     if not overwrite:
+        n_before = len(selected_papers)
         selected_papers = [p for p in selected_papers if not p.output_path.exists()]
-
-    if limit is not None:
-        selected_papers = selected_papers[:limit]
+        n_after = len(selected_papers)
+        if n_before != n_after:
+            print(
+                f"Skipping {n_after - n_before} papers with existing output files. Use -f to re-stamp them."
+            )
 
     N = len(selected_papers)
+
+    if N == 0:
+        print("Nothing to do.")
+        return False
 
     if dry_run:
         for paper in selected_papers:
@@ -128,12 +135,9 @@ def stamp(
     if csv:
         write_csv(config_path)
     if report:
-        if match_output_name is not None:
-            print(
-                "Skipping report generation because --match-output-name / -S was used."
-            )
-        else:
-            write_report(config_path, limit=limit, jobs=jobs)
+        write_report(config_path, pattern=pattern, jobs=jobs)
+    if do_verify:
+        verify(config_path)
 
 
 @app.command
@@ -182,11 +186,16 @@ def verify(config_path: Path):
 
 
 @app.command
-def show_json(config_path: Path):
+def show_json(
+    config_path: Path,
+    pattern: Annotated[str | None, Parameter(help=SEARCH_HELP)] = None,
+):
     """Print a paper list as JSON."""
     config = ProceedingsConfig.from_toml(config_path)
     papers = PaperList.read_paper_list(config)
-    print(papers.model_dump_json(indent=2))
+    papers = list(apply_search_terms(papers.papers, pattern))
+    for paper in papers:
+        print(paper.model_dump_json(indent=2))
 
 
 @app.command
@@ -211,11 +220,8 @@ def shell(config_path: Path):
 @app.command
 def write_report(
     config_path: Path,
+    pattern: Annotated[str | None, Parameter(help=SEARCH_HELP)] = None,
     *,
-    limit: Annotated[
-        int | None,
-        Parameter(name=["--limit", "-n"], help="Only process the first N papers"),
-    ] = None,
     jobs: Annotated[
         int, Parameter(name=["--jobs", "-j"], help="Number of jobs to run in parallel")
     ] = 8,
@@ -225,7 +231,7 @@ def write_report(
     config = ProceedingsConfig.from_toml(config_path)
     papers = PaperList.read_paper_list(config)
 
-    papers = papers[:limit]
+    papers = list(apply_search_terms(papers.papers, pattern))
 
     n_groups = (len(papers) + group_size - 1) // group_size
     for group_num, i in enumerate(range(0, len(papers), group_size)):
