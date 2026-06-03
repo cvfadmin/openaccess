@@ -73,7 +73,7 @@ class PaperList(BaseModel):
                 if "\\" in filename:
                     filename = filename.split("\\")[-1]
                 paper = Paper(
-                    index=i,
+                    index=i + 1,
                     conference_acronym=config.acronym,
                     title=row[columns.title],
                     abstract=row[columns.abstract],

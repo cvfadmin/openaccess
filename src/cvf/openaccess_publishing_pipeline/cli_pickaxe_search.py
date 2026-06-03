@@ -40,14 +40,14 @@ class PickaxeRangeTransformer(Transformer):
         elif len(items) == 1:
             if items[0].data == "dashedstart":
                 start = int(items[0].children[0])
-                return slice(start, None)
+                return slice(start - 1, None)
             else:
                 stop = int(items[0].children[0])
-                return slice(None, stop + 1)
+                return slice(None, stop)
         elif len(items) == 2:
             start = int(items[0].children[0])
             stop = int(items[1].children[0])
-            return slice(start, stop + 1)
+            return slice(start - 1, stop)
 
     def colonslice(self, items):
         start = None
