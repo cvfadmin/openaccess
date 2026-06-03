@@ -84,9 +84,9 @@ def apply_search_terms(
         for paper in paper_list:
             if (
                 search_terms.lower() in " ".join(paper.authors).lower()
-                or search_terms.lower() in paper.input_path.name.lower()
+                or search_terms.lower() in str(paper.input_path).lower()
+                or search_terms.lower() in str(paper.output_path).lower()
                 or search_terms.lower() in paper.title.lower()
-                or search_terms.lower() in paper.sensible_output_basename.lower()
             ):
                 count += 1
                 yield paper
