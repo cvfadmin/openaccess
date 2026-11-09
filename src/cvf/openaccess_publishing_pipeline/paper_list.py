@@ -104,6 +104,9 @@ class PaperList(BaseModel):
                     input_path=config.input_path / filename,
                     output_directory=config.output_path,
                 )
+                for override in config.overrides:
+                    if override.input_basename == paper.input_path.name:
+                        paper.page_number_locations = override.page_number_locations
                 paper_list.append(paper)
 
         return cls(papers=paper_list, config=config)

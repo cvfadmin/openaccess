@@ -6,6 +6,12 @@ from typing import Annotated
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, field_validator
 from pydantic.types import DirectoryPath
 
+class PaperStampOverrideConfig(BaseModel):
+    "Some papers are unlucky and need different stamping defaults than the rest."
+    input_basename: str
+    page_number_locations: list[float] | None = None
+
+
 
 class PaperListSpreadsheetColumnsConfig(BaseModel):
     "List of column names in the spreadsheet. These are used to extract the title and abstract of each paper, which are then used to generate the banner text."
@@ -98,6 +104,8 @@ class ProceedingsConfig(BaseModel):
     spreadsheet: PaperListSpreadsheetConfig
 
     banner: BannerConfig
+
+    overrides: list[PaperStampOverrideConfig] = []
 
     @classmethod
     def from_toml(cls, config_path: Path) -> "ProceedingsConfig":
