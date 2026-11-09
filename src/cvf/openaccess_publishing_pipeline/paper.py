@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import unidecode
-from nameparser import HumanName
+from nameparser import parse
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from cvf.openaccess_publishing_pipeline import stamp_firstpage_banner, stamp_pagenumber
@@ -259,9 +259,8 @@ class Paper(BaseModel):
     @property
     def sensible_output_basename(self) -> str:
         """Generate a sensible final filename given a paper dictionary"""
-        first_author = HumanName(self.authors[0])
-        first_author.capitalize()
-        name = (first_author.last or first_author.first).replace(" ", "_")
+        first_author = parse(self.authors[0]).capitalized()
+        name = (first_author.family or first_author.given).replace(" ", "_")
         first_few_words_of_title = "_".join(self.title.split(" ")[:10])
         return sanitize_for_filename(
             "%s_%s_%s_%d_paper.pdf"
@@ -280,9 +279,8 @@ class Paper(BaseModel):
         if not self.supplemental_filename:
             return None
         extension = self.supplemental_filename.split(".")[1]
-        first_author = HumanName(self.authors[0])
-        first_author.capitalize()
-        name = (first_author.last or first_author.first).replace(" ", "_")
+        first_author = parse(self.authors[0]).capitalized()
+        name = (first_author.family or first_author.given).replace(" ", "_")
         first_three_words_of_title = "_".join(self.title.split(" ")[:3])
         return sanitize_for_filename(
             "%s_%s_%s_%d_supplemental.%s"
